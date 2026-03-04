@@ -274,13 +274,25 @@
 
         <!-- ============ 記録ページ ============ -->
         <div class="page hidden" id="record-page">
-            <div class="bg-gray-800 rounded-2xl shadow-lg border border-gray-700 p-6 mb-4">
-                <h2 class="text-xl font-bold text-gray-200 mb-5">着金を記録</h2>
+            <!-- 成約率 -->
+            <div class="bg-gray-800 rounded-2xl shadow-lg border border-accent/30 p-6 mb-4">
+                <h2 class="text-lg font-bold text-gray-200 mb-3">成約率</h2>
+                <div class="flex items-center gap-3">
+                    <input type="number" id="record-closing-rate" min="0" max="100" step="0.1" placeholder="50" class="flex-1 px-4 py-3 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent bg-gray-700 text-gray-100 text-2xl mono text-center">
+                    <span class="text-2xl font-bold text-accent mono">%</span>
+                </div>
+                <button id="save-closing-rate-btn" class="w-full mt-3 bg-accent hover:bg-amber-600 text-white font-bold py-2.5 px-4 rounded-lg transition-all text-sm">
+                    成約率を更新
+                </button>
+            </div>
 
+            <!-- 着金記録 -->
+            <div class="bg-gray-800 rounded-2xl shadow-lg border border-gray-700 p-6 mb-4">
+                <h2 class="text-lg font-bold text-gray-200 mb-3">着金を記録</h2>
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">着金額（円）</label>
-                        <input type="number" id="record-amount" placeholder="例: 300000" class="w-full px-4 py-3 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-gray-700 text-gray-100 text-lg mono">
+                        <label class="block text-sm font-medium text-gray-300 mb-1">着金額（万円）</label>
+                        <input type="number" id="record-amount" step="0.1" placeholder="例: 79.8" class="w-full px-4 py-3 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-gray-700 text-gray-100 text-lg mono">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-300 mb-1">メモ（任意）</label>
@@ -309,13 +321,6 @@
             <div class="bg-gray-800 rounded-2xl shadow-lg border border-gray-700 p-6 mb-4">
                 <h2 class="text-xl font-bold text-gray-200 mb-5">目標設定</h2>
                 <div class="space-y-5">
-
-                    <!-- 商談数（成約率計算用） -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">商談数（実施数）</label>
-                        <input type="number" id="setting-total-meetings" value="0" min="0" class="w-full px-4 py-2.5 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-gray-700 text-gray-100 mono text-lg">
-                        <p class="text-xs text-gray-500 mt-1">実施した商談の総数。着金記録数 ÷ 商談数 = 成約率</p>
-                    </div>
 
                     <!-- 着金目標 -->
                     <div>
@@ -430,8 +435,8 @@
         const DEFAULT_SETTINGS = {
             goal: 2000,          // 万円
             unitPrice: 79.8,     // 万円
-            conversionRate: 50,  // %
-            totalMeetings: 0,    // 商談数
+            conversionRate: 50,  // %（逆算用目標成約率）
+            closingRate: 0,      // %（実績成約率）
             startDate: '2026-03-01',
             deadline: '2026-03-31'
         };
@@ -503,7 +508,6 @@
         const conversionRateValue = document.getElementById('conversion-rate-value');
 
         const settingStartDate = document.getElementById('setting-start-date');
-        const settingTotalMeetings = document.getElementById('setting-total-meetings');
 
         // 設定を読み込んで反映
         function applySettingsToForm() {
@@ -511,10 +515,12 @@
             settingGoal.value = s.goal;
             settingUnitPrice.value = s.unitPrice;
             settingConversionRate.value = s.conversionRate;
-            settingTotalMeetings.value = s.totalMeetings || 0;
             settingStartDate.value = s.startDate || DEFAULT_SETTINGS.startDate;
             settingDeadline.value = s.deadline;
             conversionRateValue.textContent = s.conversionRate + '%';
+            // 成約率フィールドにも反映
+            const crInput = document.getElementById('record-closing-rate');
+            if (crInput && s.closingRate > 0) crInput.value = s.closingRate;
         }
 
         settingConversionRate.addEventListener('input', function() {
@@ -557,7 +563,7 @@
                 goal: parseFloat(settingGoal.value) || 100,
                 unitPrice: parseFloat(settingUnitPrice.value) || 30,
                 conversionRate: parseFloat(settingConversionRate.value) || 20,
-                totalMeetings: parseInt(settingTotalMeetings.value) || 0,
+                closingRate: loadSettings().closingRate || 0,
                 startDate: settingStartDate.value || DEFAULT_SETTINGS.startDate,
                 deadline: settingDeadline.value || getDefaultDeadline()
             };
@@ -574,14 +580,34 @@
         });
 
         // ==============================
+        // 成約率の保存
+        // ==============================
+        document.getElementById('save-closing-rate-btn').addEventListener('click', function() {
+            const crInput = document.getElementById('record-closing-rate');
+            const val = parseFloat(crInput.value);
+            if (isNaN(val) || val < 0 || val > 100) {
+                crInput.classList.add('border-danger');
+                setTimeout(() => crInput.classList.remove('border-danger'), 1500);
+                return;
+            }
+            const settings = loadSettings();
+            settings.closingRate = val;
+            saveSettings(settings);
+            updateDashboard();
+            this.textContent = '✓ 更新しました';
+            setTimeout(() => { this.textContent = '成約率を更新'; }, 1500);
+        });
+
+        // ==============================
         // 着金記録
         // ==============================
         document.getElementById('add-record-btn').addEventListener('click', function() {
             const amountInput = document.getElementById('record-amount');
             const memoInput = document.getElementById('record-memo');
-            const amount = parseInt(amountInput.value);
+            const amountMan = parseFloat(amountInput.value);
+            const amount = Math.round(amountMan * 10000);
 
-            if (!amount || amount <= 0) {
+            if (!amountMan || amountMan <= 0) {
                 amountInput.classList.add('border-danger');
                 setTimeout(() => amountInput.classList.remove('border-danger'), 1500);
                 return;
@@ -706,25 +732,19 @@
             document.getElementById('remaining-days-label').textContent = diffDays;
             document.getElementById('deadline-label').textContent = settings.deadline;
 
-            // 成約率（実績）表示 - 手動: 着金件数 / 商談数
-            const totalMeetings = settings.totalMeetings || 0;
-            const closedDeals = records.length;
-            const closingCard = document.getElementById('closing-rate-card');
-            if (totalMeetings > 0) {
-                const cRate = Math.round(closedDeals / totalMeetings * 1000) / 10;
-                document.getElementById('closing-rate-value').textContent = cRate + '%';
-                document.getElementById('closing-rate-detail').textContent = '商談' + totalMeetings + '件 → 成約' + closedDeals + '件';
-                const crEl = document.getElementById('closing-rate-value');
-                if (cRate >= 50) {
-                    crEl.className = 'text-2xl font-extrabold text-primary mono';
-                } else if (cRate >= 30) {
-                    crEl.className = 'text-2xl font-extrabold text-accent mono';
-                } else {
-                    crEl.className = 'text-2xl font-extrabold text-danger mono';
-                }
+            // 成約率（実績）表示
+            const cRate = settings.closingRate || 0;
+            document.getElementById('closing-rate-value').textContent = cRate > 0 ? cRate + '%' : '--%';
+            document.getElementById('closing-rate-detail').textContent = cRate > 0 ? '成約' + records.length + '件' : '記録タブで成約率を入力';
+            const crEl = document.getElementById('closing-rate-value');
+            if (cRate >= 50) {
+                crEl.className = 'text-2xl font-extrabold text-primary mono';
+            } else if (cRate >= 30) {
+                crEl.className = 'text-2xl font-extrabold text-accent mono';
+            } else if (cRate > 0) {
+                crEl.className = 'text-2xl font-extrabold text-danger mono';
             } else {
-                document.getElementById('closing-rate-value').textContent = '--%';
-                document.getElementById('closing-rate-detail').textContent = '設定で商談数を入力してください';
+                crEl.className = 'text-2xl font-extrabold text-accent mono';
             }
 
             // 残り日数の色
