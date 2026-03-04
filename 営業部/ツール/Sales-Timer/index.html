@@ -146,16 +146,10 @@
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-xl font-bold text-gray-200">着金までの残高</h2>
                     <div class="flex items-center gap-2">
-                        <button id="sync-btn" onclick="syncFromSheet()" class="text-xs text-gray-400 hover:text-primary transition-colors flex items-center gap-1 mono border border-gray-600 rounded-full px-2 py-0.5 hover:border-primary">
-                            <svg class="w-3 h-3" id="sync-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                            <span id="sync-label">SYNC</span>
-                        </button>
                         <div class="h-2 w-2 rounded-full bg-primary animate-pulse-urgent"></div>
                         <span class="text-xs text-gray-400 mono">LIVE</span>
                     </div>
                 </div>
-                <!-- 同期ステータス -->
-                <div id="sync-status" class="hidden mb-3 text-xs text-center text-gray-500 mono"></div>
 
                 <!-- メイン残高表示 -->
                 <div class="mono bg-gray-900 rounded-xl py-5 px-4 shadow-inner text-center mb-3 border border-gray-700 animate-heartbeat">
@@ -197,11 +191,11 @@
                 </div>
 
                 <!-- 成約率（実績） -->
-                <div id="closing-rate-card" class="mt-4 bg-gradient-to-r from-accent/10 to-primary/10 rounded-xl p-4 border border-accent/30 hidden">
+                <div id="closing-rate-card" class="mt-4 bg-gradient-to-r from-accent/10 to-primary/10 rounded-xl p-4 border border-accent/30">
                     <div class="flex items-center justify-between">
                         <div>
                             <span class="text-sm text-gray-400 block">成約率（実績）</span>
-                            <span id="closing-rate-detail" class="text-xs text-gray-500">-- 件中 -- 件成約</span>
+                            <span id="closing-rate-detail" class="text-xs text-gray-500">商談0件 → 成約0件</span>
                         </div>
                         <span id="closing-rate-value" class="text-2xl font-extrabold text-accent mono">--%</span>
                     </div>
@@ -298,26 +292,10 @@
                 </div>
             </div>
 
-            <!-- スプレッドシート着金 -->
-            <div id="sheet-records-section" class="bg-gray-800 rounded-2xl shadow-lg border border-primary/30 p-6 mb-4 hidden">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold text-gray-200 flex items-center gap-2">
-                        <svg class="w-4 h-4 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                        Sheets連携
-                    </h3>
-                    <span id="sheet-record-count" class="text-xs text-primary mono">0件</span>
-                </div>
-                <div id="sheet-total" class="bg-gray-900/50 rounded-lg p-3 border border-primary/20 mb-3 text-center">
-                    <span class="text-xs text-gray-400">スプレッドシート合計</span>
-                    <div class="text-lg font-bold text-primary mono">¥0</div>
-                </div>
-                <div id="sheet-records-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
-            </div>
-
-            <!-- 手動着金履歴 -->
+            <!-- 着金履歴 -->
             <div class="bg-gray-800 rounded-2xl shadow-lg border border-gray-700 p-6">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold text-gray-200">手動着金履歴</h3>
+                    <h3 class="text-lg font-bold text-gray-200">着金履歴</h3>
                     <span id="record-count" class="text-xs text-gray-400 mono">0件</span>
                 </div>
                 <div id="records-list" class="space-y-2">
@@ -332,14 +310,11 @@
                 <h2 class="text-xl font-bold text-gray-200 mb-5">目標設定</h2>
                 <div class="space-y-5">
 
-                    <!-- Google Sheets 連携 -->
-                    <div class="bg-primary/10 border border-primary/30 rounded-lg p-4 space-y-3">
-                        <label class="block text-sm font-bold text-primary">Google Sheets 連携</label>
-                        <div>
-                            <label class="block text-xs text-gray-400 mb-1">スプレッドシートURL</label>
-                            <input type="url" id="setting-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/..." class="w-full px-3 py-2 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-gray-700 text-gray-100 text-xs mono">
-                        </div>
-                        <p class="text-xs text-gray-500">スプレッドシートの共有設定を「リンクを知っている全員が閲覧可」にしてURLを貼るだけ</p>
+                    <!-- 商談数（成約率計算用） -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">商談数（実施数）</label>
+                        <input type="number" id="setting-total-meetings" value="0" min="0" class="w-full px-4 py-2.5 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-gray-700 text-gray-100 mono text-lg">
+                        <p class="text-xs text-gray-500 mt-1">実施した商談の総数。着金記録数 ÷ 商談数 = 成約率</p>
                     </div>
 
                     <!-- 着金目標 -->
@@ -456,6 +431,7 @@
             goal: 2000,          // 万円
             unitPrice: 79.8,     // 万円
             conversionRate: 50,  // %
+            totalMeetings: 0,    // 商談数
             startDate: '2026-03-01',
             deadline: '2026-03-31'
         };
@@ -483,68 +459,6 @@
         function saveRecords(records) {
             localStorage.setItem('salesTimer_records', JSON.stringify(records));
         }
-
-        // ==============================
-        // スプレッドシート連携（PHPプロキシ経由）
-        // ==============================
-        const PROXY_URL = './sheets-proxy.php';
-
-        function loadSheetData() {
-            const saved = localStorage.getItem('salesTimer_sheetData');
-            return saved ? JSON.parse(saved) : null;
-        }
-
-        function saveSheetData(data) {
-            localStorage.setItem('salesTimer_sheetData', JSON.stringify(data));
-        }
-
-        window.syncFromSheet = async function() {
-            const settings = loadSettings();
-            const syncBtn = document.getElementById('sync-btn');
-            const syncIcon = document.getElementById('sync-icon');
-            const syncLabel = document.getElementById('sync-label');
-            const syncStatus = document.getElementById('sync-status');
-
-            syncIcon.classList.add('animate-spin');
-            syncLabel.textContent = '同期中...';
-            syncBtn.disabled = true;
-
-            try {
-                const params = new URLSearchParams();
-                if (settings.startDate) params.set('from', settings.startDate);
-                if (settings.deadline) params.set('to', settings.deadline);
-
-                const res = await fetch(PROXY_URL + '?' + params.toString());
-                const data = await res.json();
-
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-
-                data.fetchedAt = new Date().toISOString();
-                saveSheetData(data);
-                renderSheetRecords();
-                updateDashboard();
-
-                syncStatus.classList.remove('hidden');
-                syncStatus.textContent = '最終同期: ' + new Date().toLocaleString('ja-JP') + '（' + data.count + '件 / ¥' + (data.total || 0).toLocaleString() + '）';
-                syncStatus.classList.remove('text-danger');
-                syncStatus.classList.add('text-primary');
-
-                syncLabel.textContent = 'OK!';
-                setTimeout(() => { syncLabel.textContent = 'SYNC'; }, 2000);
-            } catch (err) {
-                syncStatus.classList.remove('hidden');
-                syncStatus.textContent = '同期エラー: ' + err.message;
-                syncStatus.classList.remove('text-primary');
-                syncStatus.classList.add('text-danger');
-                syncLabel.textContent = 'ERROR';
-                setTimeout(() => { syncLabel.textContent = 'SYNC'; }, 3000);
-            } finally {
-                syncIcon.classList.remove('animate-spin');
-                syncBtn.disabled = false;
-            }
-        };
 
         // ==============================
         // タブ切り替え
@@ -588,8 +502,8 @@
         const settingDeadline = document.getElementById('setting-deadline');
         const conversionRateValue = document.getElementById('conversion-rate-value');
 
-        const settingSheetUrl = document.getElementById('setting-sheet-url');
         const settingStartDate = document.getElementById('setting-start-date');
+        const settingTotalMeetings = document.getElementById('setting-total-meetings');
 
         // 設定を読み込んで反映
         function applySettingsToForm() {
@@ -597,9 +511,9 @@
             settingGoal.value = s.goal;
             settingUnitPrice.value = s.unitPrice;
             settingConversionRate.value = s.conversionRate;
+            settingTotalMeetings.value = s.totalMeetings || 0;
             settingStartDate.value = s.startDate || DEFAULT_SETTINGS.startDate;
             settingDeadline.value = s.deadline;
-            settingSheetUrl.value = s.sheetUrl || '';
             conversionRateValue.textContent = s.conversionRate + '%';
         }
 
@@ -643,9 +557,9 @@
                 goal: parseFloat(settingGoal.value) || 100,
                 unitPrice: parseFloat(settingUnitPrice.value) || 30,
                 conversionRate: parseFloat(settingConversionRate.value) || 20,
+                totalMeetings: parseInt(settingTotalMeetings.value) || 0,
                 startDate: settingStartDate.value || DEFAULT_SETTINGS.startDate,
-                deadline: settingDeadline.value || getDefaultDeadline(),
-                sheetUrl: settingSheetUrl.value.trim()
+                deadline: settingDeadline.value || getDefaultDeadline()
             };
             saveSettings(settings);
             updateDashboard();
@@ -687,37 +601,6 @@
             renderRecords();
             updateDashboard();
         });
-
-        function renderSheetRecords() {
-            const sheetData = loadSheetData();
-            const section = document.getElementById('sheet-records-section');
-            if (!sheetData || !sheetData.records || sheetData.records.length === 0) {
-                section.classList.add('hidden');
-                return;
-            }
-            section.classList.remove('hidden');
-            document.getElementById('sheet-record-count').textContent = sheetData.count + '件';
-            document.getElementById('sheet-total').querySelector('.mono').textContent = '¥' + (sheetData.total || 0).toLocaleString();
-
-            const list = document.getElementById('sheet-records-list');
-            list.innerHTML = sheetData.records.map(r => {
-                let dateStr = '';
-                if (r.date) {
-                    try {
-                        const d = new Date(r.date);
-                        dateStr = `${d.getMonth()+1}/${d.getDate()}`;
-                    } catch(e) { dateStr = r.date; }
-                }
-                return `
-                    <div class="flex items-center justify-between bg-gray-900/50 rounded-lg p-2.5 border border-gray-700">
-                        <span class="text-primary font-semibold mono text-sm">¥${(r.amount || 0).toLocaleString()}</span>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs text-gray-500">${r.status}</span>
-                            <span class="text-xs text-gray-600">${dateStr}</span>
-                        </div>
-                    </div>`;
-            }).join('');
-        }
 
         function renderRecords() {
             const records = loadRecords();
@@ -774,11 +657,8 @@
             const unitPriceYen = settings.unitPrice * 10000;
             const rate = settings.conversionRate / 100;
 
-            // 達成額を計算（スプレッドシート + 手動記録）
-            const sheetData = loadSheetData();
-            const sheetTotal = sheetData ? (sheetData.total || 0) : 0;
-            const manualTotal = records.reduce((sum, r) => sum + r.amount, 0);
-            const achieved = sheetTotal + manualTotal;
+            // 達成額を計算
+            const achieved = records.reduce((sum, r) => sum + r.amount, 0);
             const remaining = Math.max(0, goalYen - achieved);
             const progressPercent = goalYen > 0 ? Math.min(100, (achieved / goalYen) * 100) : 0;
 
@@ -826,19 +706,14 @@
             document.getElementById('remaining-days-label').textContent = diffDays;
             document.getElementById('deadline-label').textContent = settings.deadline;
 
-            // 成約率（実績）表示 - スプレッドシートのサマリーから取得
+            // 成約率（実績）表示 - 手動: 着金件数 / 商談数
+            const totalMeetings = settings.totalMeetings || 0;
+            const closedDeals = records.length;
             const closingCard = document.getElementById('closing-rate-card');
-            const summary = sheetData ? sheetData.summary : null;
-            if (summary && summary.closingRate !== null) {
-                closingCard.classList.remove('hidden');
-                const cRate = summary.closingRate;
+            if (totalMeetings > 0) {
+                const cRate = Math.round(closedDeals / totalMeetings * 1000) / 10;
                 document.getElementById('closing-rate-value').textContent = cRate + '%';
-                const detail = [];
-                if (summary.reservations !== null) detail.push('予約' + summary.reservations + '件');
-                if (summary.conducted !== null) detail.push('実施' + summary.conducted + '件');
-                if (summary.closed !== null) detail.push('成約' + summary.closed + '件');
-                document.getElementById('closing-rate-detail').textContent = detail.join(' → ');
-                // 色変更
+                document.getElementById('closing-rate-detail').textContent = '商談' + totalMeetings + '件 → 成約' + closedDeals + '件';
                 const crEl = document.getElementById('closing-rate-value');
                 if (cRate >= 50) {
                     crEl.className = 'text-2xl font-extrabold text-primary mono';
@@ -848,7 +723,8 @@
                     crEl.className = 'text-2xl font-extrabold text-danger mono';
                 }
             } else {
-                closingCard.classList.add('hidden');
+                document.getElementById('closing-rate-value').textContent = '--%';
+                document.getElementById('closing-rate-detail').textContent = '設定で商談数を入力してください';
             }
 
             // 残り日数の色
@@ -968,25 +844,9 @@
         // 初期化
         // ==============================
         applySettingsToForm();
-        renderSheetRecords();
         renderRecords();
         updateDashboard();
         updateCalcPreview();
-
-        // 前回の同期時刻を表示
-        const sheetDataInit = loadSheetData();
-        if (sheetDataInit && sheetDataInit.fetchedAt) {
-            const syncStatus = document.getElementById('sync-status');
-            syncStatus.classList.remove('hidden');
-            syncStatus.classList.add('text-primary');
-            syncStatus.textContent = '最終同期: ' + new Date(sheetDataInit.fetchedAt).toLocaleString('ja-JP');
-        }
-
-        // URL設定済みなら起動時に自動同期
-        const initSettings = loadSettings();
-        if (initSettings.sheetUrl) {
-            syncFromSheet();
-        }
 
         // 1分ごとにダッシュボード更新（日付変更対応）
         setInterval(updateDashboard, 60000);
