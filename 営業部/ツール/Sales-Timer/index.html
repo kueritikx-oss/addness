@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+    <title>Sales Timer - 着金タイマー</title>
+    <meta name="theme-color" content="#10B981">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>💰</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            light: '#34D399',
+                            DEFAULT: '#10B981',
+                            dark: '#059669'
+                        },
+                        accent: '#F59E0B',
+                        danger: '#EF4444',
+                        warning: '#F97316'
+                    },
+                    animation: {
+                        'pulse-urgent': 'pulseUrgent 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'tick': 'tick 1s linear infinite',
+                        'heartbeat': 'heartbeat 1.5s ease-in-out infinite',
+                        'count-up': 'countUp 0.6s ease-out',
+                        'slide-up': 'slideUp 0.4s ease-out',
+                    },
+                    keyframes: {
+                        pulseUrgent: {
+                            '0%, 100%': { opacity: 1 },
+                            '50%': { opacity: 0.85 }
+                        },
+                        tick: {
+                            '0%': { transform: 'scale(1)' },
+                            '10%': { transform: 'scale(1.02)' },
+                            '20%': { transform: 'scale(1)' }
+                        },
+                        heartbeat: {
+                            '0%': { transform: 'scale(1)' },
+                            '15%': { transform: 'scale(1.03)' },
+                            '30%': { transform: 'scale(1)' },
+                            '45%': { transform: 'scale(1.03)' },
+                            '60%': { transform: 'scale(1)' }
+                        },
+                        countUp: {
+                            '0%': { transform: 'translateY(10px)', opacity: 0 },
+                            '100%': { transform: 'translateY(0)', opacity: 1 }
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: 0 },
+                            '100%': { transform: 'translateY(0)', opacity: 1 }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* カスタムスライダー */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 8px;
+            background: #374151;
+            border-radius: 999px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #10B981;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+            transition: transform 0.15s;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        /* 数値入力スピナー非表示 */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+
+        /* プログレスバーのアニメーションストライプ */
+        .progress-stripe {
+            background-image: linear-gradient(
+                45deg,
+                rgba(255,255,255,0.1) 25%,
+                transparent 25%,
+                transparent 50%,
+                rgba(255,255,255,0.1) 50%,
+                rgba(255,255,255,0.1) 75%,
+                transparent 75%
+            );
+            background-size: 20px 20px;
+            animation: stripeMove 1s linear infinite;
+        }
+        @keyframes stripeMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 20px 0; }
+        }
+
+        /* ページ遷移 */
+        .page { transition: opacity 0.2s ease; }
+
+        /* 円形プログレス */
+        .circular-progress {
+            transform: rotate(-90deg);
+        }
+        .circular-progress circle {
+            transition: stroke-dashoffset 1s ease-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 antialiased">
+    <div class="container mx-auto px-5 py-6 pb-24 max-w-md">
+
+        <!-- アプリタイトル -->
+        <h1 class="text-2xl font-bold text-center mb-5 text-white flex items-center justify-center gap-2">
+            <span class="text-primary animate-pulse-urgent">SALES</span>
+            <span class="mono text-gray-400">TIMER</span>
+        </h1>
+
+        <!-- ============ ホームページ ============ -->
+        <div class="page" id="home-page">
+
+            <!-- メインタイマーカード -->
+            <div class="bg-gray-800 rounded-2xl shadow-lg border border-gray-700 p-6 mb-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-200">着金までの残高</h2>
+                    <div class="flex items-center gap-2">
+                        <div class="h-2 w-2 rounded-full bg-primary animate-pulse-urgent"></div>
+                        <span class="text-xs text-gray-400 mono">LIVE</span>
+                    </div>
+                </div>
+
+                <!-- メイン残高表示 -->
+                <div class="mono bg-gray-900 rounded-xl py-5 px-4 shadow-inner text-center mb-3 border border-gray-700 animate-heartbeat">
+                    <div class="text-xs text-gray-500 mb-1">あと</div>
+                    <div id="remaining-amount" class="text-3xl font-bold text-white tracking-wider">¥0</div>
+                    <div class="text-xs text-gray-500 mt-1">目標達成まで</div>
+                </div>
+
+                <!-- プログレスバー -->
+                <div class="mt-3">
+                    <div class="flex justify-between text-xs text-gray-400 mb-1">
+                        <span id="achieved-label">¥0</span>
+                        <span id="goal-label">¥0</span>
+                    </div>
+                    <div class="bg-gray-700 rounded-full h-3 overflow-hidden relative">
+                        <div class="bg-gradient-to-r from-primary to-primary-light h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden" id="revenue-progress" style="width: 0%">
+                            <div class="progress-stripe absolute inset-0"></div>
+                        </div>
+                    </div>
+                    <div class="text-center mt-1">
+                        <span id="progress-percent" class="text-sm font-semibold text-primary mono">0%</span>
+                    </div>
+                </div>
+
+                <!-- 3列ステータス -->
+                <div class="grid grid-cols-3 gap-3 mt-5">
+                    <div class="bg-gray-900/50 rounded-xl p-3 text-center border border-gray-700">
+                        <span class="text-xs text-gray-400 block">目標額</span>
+                        <span id="stat-goal" class="text-base font-semibold text-white mono">--</span>
+                    </div>
+                    <div class="bg-gray-900/50 rounded-xl p-3 text-center border border-gray-700">
+                        <span class="text-xs text-gray-400 block">達成額</span>
+                        <span id="stat-achieved" class="text-base font-semibold text-primary mono">--</span>
+                    </div>
+                    <div class="bg-gray-900/50 rounded-xl p-3 text-center border border-gray-700">
+                        <span class="text-xs text-gray-400 block">達成率</span>
+                        <span id="stat-rate" class="text-base font-semibold text-white mono">0%</span>
+                    </div>
+                </div>
+
+                <!-- モチベーションメッセージ -->
+                <div class="mt-5 p-3 border border-primary/30 bg-primary/10 rounded-lg">
+                    <div id="motivation-message" class="text-sm text-center text-white italic transition-all duration-500">
+                        「数字は嘘をつかない。行動した分だけ結果がついてくる」
+                    </div>
+                </div>
+            </div>
+
+            <!-- 逆算カード -->
+            <div class="bg-gray-800 rounded-2xl shadow-lg border border-gray-700 p-6 mb-4">
+                <h3 class="text-lg font-bold text-gray-200 mb-4 flex items-center gap-2">
+                    <span class="text-accent">⚡</span> 逆算シミュレーション
+                </h3>
+
+                <div class="space-y-3">
+                    <!-- 残り日数 -->
+                    <div class="flex items-center justify-between bg-gray-900/50 rounded-lg p-3 border border-gray-700">
+                        <span class="text-sm text-gray-400">残り日数</span>
+                        <span id="remaining-days" class="text-lg font-bold text-white mono">-- 日</span>
+                    </div>
+
+                    <!-- 必要成約数 -->
+                    <div class="flex items-center justify-between bg-gray-900/50 rounded-lg p-3 border border-gray-700">
+                        <div>
+                            <span class="text-sm text-gray-400 block">必要成約数</span>
+                            <span class="text-xs text-gray-500">残り着金 ÷ 単価</span>
+                        </div>
+                        <span id="needed-contracts" class="text-lg font-bold text-accent mono">-- 件</span>
+                    </div>
+
+                    <!-- 必要商談数 -->
+                    <div class="flex items-center justify-between bg-gray-900/50 rounded-lg p-3 border border-primary/30">
+                        <div>
+                            <span class="text-sm text-gray-400 block">必要商談数</span>
+                            <span class="text-xs text-gray-500">成約数 ÷ 成約率</span>
+                        </div>
+                        <span id="needed-meetings" class="text-lg font-bold text-primary mono">-- 件</span>
+                    </div>
+
+                    <!-- 区切り線 -->
+                    <div class="border-t border-gray-700 my-2"></div>
+
+                    <!-- 1日あたり -->
+                    <div class="bg-gradient-to-r from-primary/10 to-accent/10 rounded-xl p-4 border border-primary/20">
+                        <div class="text-center mb-2">
+                            <span class="text-xs text-gray-400">1日あたりのノルマ</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="text-center">
+                                <div id="daily-meetings" class="text-2xl font-extrabold text-primary mono">--</div>
+                                <div class="text-xs text-gray-400 mt-1">商談/日</div>
+                            </div>
+                            <div class="text-center">
+                                <div id="daily-revenue" class="text-2xl font-extrabold text-accent mono">--</div>
+                                <div class="text-xs text-gray-400 mt-1">万円/日</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 残り日数ドットグリッド -->
+            <div class="bg-gray-800 rounded-2xl shadow-lg border border-gray-700 p-5 mb-4">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-sm text-gray-400">残り <span id="remaining-days-label" class="text-white font-semibold">--</span> 日</span>
+                    <span class="text-sm text-gray-400">期限: <span id="deadline-label" class="text-white">--</span></span>
+                </div>
+                <div class="flex flex-wrap gap-1" id="days-grid"></div>
+            </div>
+        </div>
+
+        <!-- ============ 記録ページ ============ -->
+        <div class="page hidden" id="record-page">
+            <div class="bg-gray-800 rounded-2xl shadow-lg border border-gray-700 p-6 mb-4">
+                <h2 class="text-xl font-bold text-gray-200 mb-5">着金を記録</h2>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">着金額（円）</label>
+                        <input type="number" id="record-amount" placeholder="例: 300000" class="w-full px-4 py-3 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-gray-700 text-gray-100 text-lg mono">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">メモ（任意）</label>
+                        <input type="text" id="record-memo" placeholder="例: 〇〇様 コース契約" class="w-full px-4 py-3 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-gray-700 text-gray-100">
+                    </div>
+                    <button id="add-record-btn" class="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-[1.01] active:scale-[0.98] shadow-sm text-lg">
+                        + 着金を追加
+                    </button>
+                </div>
+            </div>
+
+            <!-- 着金履歴 -->
+            <div class="bg-gray-800 rounded-2xl shadow-lg border border-gray-700 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-200">着金履歴</h3>
+                    <span id="record-count" class="text-xs text-gray-400 mono">0件</span>
+                </div>
+                <div id="records-list" class="space-y-2">
+                    <p class="text-center text-gray-500 py-4">まだ記録がありません</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ 設定ページ ============ -->
+        <div class="page hidden" id="settings-page">
+            <div class="bg-gray-800 rounded-2xl shadow-lg border border-gray-700 p-6 mb-4">
+                <h2 class="text-xl font-bold text-gray-200 mb-5">目標設定</h2>
+                <div class="space-y-5">
+
+                    <!-- 着金目標 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">着金目標（万円）</label>
+                        <input type="number" id="setting-goal" value="100" min="1" class="w-full px-4 py-2.5 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-gray-700 text-gray-100 mono text-lg">
+                    </div>
+
+                    <!-- 商品単価 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">商品単価（万円）</label>
+                        <input type="number" id="setting-unit-price" value="30" min="0.1" step="0.1" class="w-full px-4 py-2.5 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-gray-700 text-gray-100 mono text-lg">
+                    </div>
+
+                    <!-- 成約率 -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-sm font-medium text-gray-300">成約率</label>
+                            <span id="conversion-rate-value" class="text-sm px-2.5 py-1 bg-gray-700 text-primary rounded-full mono font-semibold">20%</span>
+                        </div>
+                        <input type="range" id="setting-conversion-rate" min="1" max="100" value="20" class="w-full">
+                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>1%</span>
+                            <span>50%</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
+
+                    <!-- 期限 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">目標期限</label>
+                        <input type="date" id="setting-deadline" class="w-full px-4 py-2.5 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-gray-700 text-gray-100">
+                    </div>
+
+                    <!-- 保存ボタン -->
+                    <button id="save-settings-btn" class="w-full bg-primary hover:bg-primary-dark text-white font-bold py-3 px-4 rounded-lg transition-all transform hover:scale-[1.01] active:scale-[0.98] shadow-sm">
+                        設定を保存
+                    </button>
+                </div>
+            </div>
+
+            <!-- 逆算シート -->
+            <div class="bg-gray-800 rounded-2xl shadow-lg border border-gray-700 p-5 mb-4">
+                <h3 class="text-lg font-bold text-gray-200 mb-3">💡 逆算で見えるリアル</h3>
+                <div class="space-y-3 text-sm text-gray-300">
+                    <p>現在の設定で逆算すると...</p>
+                    <ul class="list-none space-y-2 pl-0">
+                        <li id="calc-contracts" class="flex items-center gap-2 text-white">
+                            <span class="text-primary">●</span> <span>--</span>
+                        </li>
+                        <li id="calc-meetings" class="flex items-center gap-2 text-white">
+                            <span class="text-accent">●</span> <span>--</span>
+                        </li>
+                        <li id="calc-daily" class="flex items-center gap-2 text-white">
+                            <span class="text-danger">●</span> <span>--</span>
+                        </li>
+                        <li id="calc-weekly" class="flex items-center gap-2 text-white">
+                            <span class="text-warning">●</span> <span>--</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- データリセット -->
+            <div class="bg-gray-800 rounded-2xl shadow-lg border border-gray-700 p-5">
+                <h3 class="text-lg font-bold text-gray-200 mb-3">データ管理</h3>
+                <button id="reset-all-btn" class="w-full bg-danger/20 hover:bg-danger/30 text-danger font-medium py-2.5 px-4 rounded-lg transition-colors border border-danger/30">
+                    全データをリセット
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ボトムナビゲーション -->
+    <nav class="fixed bottom-0 left-0 w-full bg-gray-800 border-t border-gray-700 shadow-lg z-50">
+        <div class="flex max-w-md mx-auto">
+            <button class="flex-1 py-4 transition-all focus:outline-none group active relative overflow-hidden" data-page="home">
+                <div class="flex flex-col items-center relative z-10">
+                    <svg class="w-5 h-5 text-gray-400 group-[.active]:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    <span class="text-gray-400 text-xs mt-1 group-[.active]:text-primary group-[.active]:font-medium transition-colors">ダッシュボード</span>
+                    <div class="h-0.5 w-10 mt-1 scale-x-0 group-[.active]:scale-x-100 bg-primary transition-transform origin-center duration-300"></div>
+                </div>
+            </button>
+            <button class="flex-1 py-4 transition-all focus:outline-none group relative overflow-hidden" data-page="record">
+                <div class="flex flex-col items-center relative z-10">
+                    <svg class="w-5 h-5 text-gray-400 group-[.active]:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                    <span class="text-gray-400 text-xs mt-1 group-[.active]:text-primary group-[.active]:font-medium transition-colors">記録</span>
+                    <div class="h-0.5 w-10 mt-1 scale-x-0 group-[.active]:scale-x-100 bg-primary transition-transform origin-center duration-300"></div>
+                </div>
+            </button>
+            <button class="flex-1 py-4 transition-all focus:outline-none group relative overflow-hidden" data-page="settings">
+                <div class="flex flex-col items-center relative z-10">
+                    <svg class="w-5 h-5 text-gray-400 group-[.active]:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <span class="text-gray-400 text-xs mt-1 group-[.active]:text-primary group-[.active]:font-medium transition-colors">設定</span>
+                    <div class="h-0.5 w-10 mt-1 scale-x-0 group-[.active]:scale-x-100 bg-primary transition-transform origin-center duration-300"></div>
+                </div>
+            </button>
+        </div>
+    </nav>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+        // ==============================
+        // データ管理
+        // ==============================
+        const DEFAULT_SETTINGS = {
+            goal: 100,           // 万円
+            unitPrice: 30,       // 万円
+            conversionRate: 20,  // %
+            deadline: getDefaultDeadline()
+        };
+
+        function getDefaultDeadline() {
+            const d = new Date();
+            d.setMonth(d.getMonth() + 1);
+            return d.toISOString().split('T')[0];
+        }
+
+        function loadSettings() {
+            const saved = localStorage.getItem('salesTimer_settings');
+            return saved ? JSON.parse(saved) : { ...DEFAULT_SETTINGS };
+        }
+
+        function saveSettings(settings) {
+            localStorage.setItem('salesTimer_settings', JSON.stringify(settings));
+        }
+
+        function loadRecords() {
+            const saved = localStorage.getItem('salesTimer_records');
+            return saved ? JSON.parse(saved) : [];
+        }
+
+        function saveRecords(records) {
+            localStorage.setItem('salesTimer_records', JSON.stringify(records));
+        }
+
+        // ==============================
+        // タブ切り替え
+        // ==============================
+        const navButtons = document.querySelectorAll('[data-page]');
+        const pages = {
+            home: document.getElementById('home-page'),
+            record: document.getElementById('record-page'),
+            settings: document.getElementById('settings-page')
+        };
+
+        navButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const target = this.dataset.page;
+
+                // タブ状態
+                navButtons.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+
+                // ページ切り替え
+                Object.values(pages).forEach(p => {
+                    p.classList.add('opacity-0');
+                    setTimeout(() => {
+                        p.classList.add('hidden');
+                    }, 200);
+                });
+
+                setTimeout(() => {
+                    pages[target].classList.remove('hidden');
+                    setTimeout(() => pages[target].classList.remove('opacity-0'), 50);
+                }, 200);
+            });
+        });
+
+        // ==============================
+        // 設定ページ
+        // ==============================
+        const settingGoal = document.getElementById('setting-goal');
+        const settingUnitPrice = document.getElementById('setting-unit-price');
+        const settingConversionRate = document.getElementById('setting-conversion-rate');
+        const settingDeadline = document.getElementById('setting-deadline');
+        const conversionRateValue = document.getElementById('conversion-rate-value');
+
+        // 設定を読み込んで反映
+        function applySettingsToForm() {
+            const s = loadSettings();
+            settingGoal.value = s.goal;
+            settingUnitPrice.value = s.unitPrice;
+            settingConversionRate.value = s.conversionRate;
+            settingDeadline.value = s.deadline;
+            conversionRateValue.textContent = s.conversionRate + '%';
+        }
+
+        settingConversionRate.addEventListener('input', function() {
+            conversionRateValue.textContent = this.value + '%';
+            updateCalcPreview();
+        });
+
+        // 設定変更時にプレビュー更新
+        [settingGoal, settingUnitPrice, settingConversionRate, settingDeadline].forEach(el => {
+            el.addEventListener('input', updateCalcPreview);
+            el.addEventListener('change', updateCalcPreview);
+        });
+
+        function updateCalcPreview() {
+            const goal = parseFloat(settingGoal.value) || 0;
+            const unitPrice = parseFloat(settingUnitPrice.value) || 1;
+            const rate = parseFloat(settingConversionRate.value) || 1;
+            const deadline = new Date(settingDeadline.value);
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const diffDays = Math.max(1, Math.ceil((deadline - today) / (1000 * 60 * 60 * 24)));
+
+            const contracts = Math.ceil(goal / unitPrice);
+            const meetings = Math.ceil(contracts / (rate / 100));
+            const dailyMeetings = (meetings / diffDays).toFixed(1);
+            const weeklyMeetings = (meetings / (diffDays / 7)).toFixed(1);
+
+            document.querySelector('#calc-contracts span:last-child').textContent =
+                `必要成約数: ${contracts}件（${goal}万 ÷ ${unitPrice}万）`;
+            document.querySelector('#calc-meetings span:last-child').textContent =
+                `必要商談数: ${meetings}件（${contracts}件 ÷ ${rate}%）`;
+            document.querySelector('#calc-daily span:last-child').textContent =
+                `1日あたり: ${dailyMeetings}件の商談（${diffDays}日間）`;
+            document.querySelector('#calc-weekly span:last-child').textContent =
+                `1週あたり: ${weeklyMeetings}件の商談`;
+        }
+
+        document.getElementById('save-settings-btn').addEventListener('click', function() {
+            const settings = {
+                goal: parseFloat(settingGoal.value) || 100,
+                unitPrice: parseFloat(settingUnitPrice.value) || 30,
+                conversionRate: parseFloat(settingConversionRate.value) || 20,
+                deadline: settingDeadline.value || getDefaultDeadline()
+            };
+            saveSettings(settings);
+            updateDashboard();
+
+            // フィードバック
+            this.textContent = '✓ 保存しました';
+            this.classList.add('bg-primary-dark');
+            setTimeout(() => {
+                this.textContent = '設定を保存';
+                this.classList.remove('bg-primary-dark');
+            }, 1500);
+        });
+
+        // ==============================
+        // 着金記録
+        // ==============================
+        document.getElementById('add-record-btn').addEventListener('click', function() {
+            const amountInput = document.getElementById('record-amount');
+            const memoInput = document.getElementById('record-memo');
+            const amount = parseInt(amountInput.value);
+
+            if (!amount || amount <= 0) {
+                amountInput.classList.add('border-danger');
+                setTimeout(() => amountInput.classList.remove('border-danger'), 1500);
+                return;
+            }
+
+            const records = loadRecords();
+            records.unshift({
+                amount: amount,
+                memo: memoInput.value || '',
+                date: new Date().toISOString()
+            });
+            saveRecords(records);
+
+            amountInput.value = '';
+            memoInput.value = '';
+
+            renderRecords();
+            updateDashboard();
+        });
+
+        function renderRecords() {
+            const records = loadRecords();
+            const list = document.getElementById('records-list');
+            const countEl = document.getElementById('record-count');
+
+            countEl.textContent = records.length + '件';
+
+            if (records.length === 0) {
+                list.innerHTML = '<p class="text-center text-gray-500 py-4">まだ記録がありません</p>';
+                return;
+            }
+
+            list.innerHTML = records.map((r, i) => {
+                const d = new Date(r.date);
+                const dateStr = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+                return `
+                    <div class="flex items-center justify-between bg-gray-900/50 rounded-lg p-3 border border-gray-700 animate-slide-up">
+                        <div>
+                            <span class="text-primary font-semibold mono">¥${r.amount.toLocaleString()}</span>
+                            ${r.memo ? `<span class="text-xs text-gray-400 ml-2">${escapeHTML(r.memo)}</span>` : ''}
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs text-gray-500">${dateStr}</span>
+                            <button onclick="deleteRecord(${i})" class="text-gray-600 hover:text-danger transition-colors text-xs">✕</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.deleteRecord = function(index) {
+            const records = loadRecords();
+            records.splice(index, 1);
+            saveRecords(records);
+            renderRecords();
+            updateDashboard();
+        };
+
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // ==============================
+        // ダッシュボード更新
+        // ==============================
+        function updateDashboard() {
+            const settings = loadSettings();
+            const records = loadRecords();
+
+            const goalYen = settings.goal * 10000;
+            const unitPriceYen = settings.unitPrice * 10000;
+            const rate = settings.conversionRate / 100;
+
+            // 達成額を計算
+            const achieved = records.reduce((sum, r) => sum + r.amount, 0);
+            const remaining = Math.max(0, goalYen - achieved);
+            const progressPercent = goalYen > 0 ? Math.min(100, (achieved / goalYen) * 100) : 0;
+
+            // 残り日数
+            const deadline = new Date(settings.deadline);
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const diffDays = Math.max(0, Math.ceil((deadline - today) / (1000 * 60 * 60 * 24)));
+
+            // 逆算
+            const neededContracts = Math.ceil(remaining / unitPriceYen);
+            const neededMeetings = Math.ceil(neededContracts / rate);
+            const dailyMeetings = diffDays > 0 ? (neededMeetings / diffDays).toFixed(1) : '∞';
+            const dailyRevenue = diffDays > 0 ? (remaining / diffDays / 10000).toFixed(1) : '∞';
+
+            // DOM更新
+            document.getElementById('remaining-amount').textContent = '¥' + remaining.toLocaleString();
+            document.getElementById('achieved-label').textContent = '¥' + achieved.toLocaleString();
+            document.getElementById('goal-label').textContent = '¥' + goalYen.toLocaleString();
+            document.getElementById('revenue-progress').style.width = progressPercent + '%';
+            document.getElementById('progress-percent').textContent = progressPercent.toFixed(1) + '%';
+
+            // プログレスバーの色を達成率に応じて変更
+            const progressBar = document.getElementById('revenue-progress');
+            if (progressPercent >= 100) {
+                progressBar.className = progressBar.className.replace(/from-\S+\s+to-\S+/, 'from-primary to-primary-light');
+            } else if (progressPercent >= 70) {
+                progressBar.className = progressBar.className.replace(/from-\S+\s+to-\S+/, 'from-primary to-primary-light');
+            } else if (progressPercent >= 30) {
+                progressBar.className = progressBar.className.replace(/from-\S+\s+to-\S+/, 'from-accent to-primary');
+            } else {
+                progressBar.className = progressBar.className.replace(/from-\S+\s+to-\S+/, 'from-danger to-accent');
+            }
+
+            document.getElementById('stat-goal').textContent = settings.goal + '万';
+            document.getElementById('stat-achieved').textContent = (achieved / 10000).toFixed(1) + '万';
+            document.getElementById('stat-rate').textContent = progressPercent.toFixed(1) + '%';
+
+            document.getElementById('remaining-days').textContent = diffDays + ' 日';
+            document.getElementById('needed-contracts').textContent = neededContracts + ' 件';
+            document.getElementById('needed-meetings').textContent = neededMeetings + ' 件';
+            document.getElementById('daily-meetings').textContent = dailyMeetings;
+            document.getElementById('daily-revenue').textContent = dailyRevenue;
+
+            document.getElementById('remaining-days-label').textContent = diffDays;
+            document.getElementById('deadline-label').textContent = settings.deadline;
+
+            // 残り日数の色
+            const daysEl = document.getElementById('remaining-days');
+            if (diffDays <= 3) {
+                daysEl.classList.add('text-danger');
+                daysEl.classList.remove('text-accent', 'text-white');
+            } else if (diffDays <= 7) {
+                daysEl.classList.add('text-accent');
+                daysEl.classList.remove('text-danger', 'text-white');
+            } else {
+                daysEl.classList.add('text-white');
+                daysEl.classList.remove('text-danger', 'text-accent');
+            }
+
+            // 目標達成時
+            if (remaining <= 0) {
+                document.getElementById('remaining-amount').textContent = '🎉 目標達成！';
+                document.getElementById('remaining-amount').classList.add('text-primary');
+            } else {
+                document.getElementById('remaining-amount').classList.remove('text-primary');
+            }
+
+            // ドットグリッド
+            generateDaysGrid(diffDays);
+        }
+
+        function generateDaysGrid(days) {
+            const grid = document.getElementById('days-grid');
+            grid.innerHTML = '';
+            const maxDots = 100;
+            const dotsToShow = Math.min(days, maxDots);
+
+            for (let i = 0; i < dotsToShow; i++) {
+                const dot = document.createElement('div');
+                const urgency = days <= 7 ? 'bg-danger/80' : days <= 14 ? 'bg-accent/80' : 'bg-primary/80';
+                dot.className = `h-2 w-2 rounded-full ${urgency}`;
+                grid.appendChild(dot);
+            }
+
+            if (days > maxDots) {
+                const more = document.createElement('span');
+                more.className = 'text-xs text-gray-400 ml-1';
+                more.textContent = `+${days - maxDots}`;
+                grid.appendChild(more);
+            }
+        }
+
+        // ==============================
+        // モチベーションメッセージ
+        // ==============================
+        const salesMessages = [
+            '「数字は嘘をつかない。行動した分だけ結果がついてくる」',
+            '「成約率を上げるには、まず商談数を増やすことから」',
+            '「今日1件の商談が、来月の着金を変える」',
+            '「断られた数だけ、成約に近づいている」',
+            '「売上目標は逆算するもの。今日やるべきことは明確だ」',
+            '「お客様の課題を解決する。それがセールスの本質」',
+            '「量が質を生む。まずは行動量を確保しよう」',
+            '「目標を達成する人は、毎日の数字を追っている」',
+            '「成約率20%なら、5件商談すれば1件決まる計算だ」',
+            '「今月の目標を来月に先送りするな。今日動こう」',
+            '「高単価の商品ほど、信頼の積み重ねが大事」',
+            '「フォローアップを怠る者は、売上も逃す」',
+            '「見込み客は待ってくれない。スピードが命」',
+            '「提案の質は、ヒアリングの質で決まる」',
+            '「No を恐れるな。それは Yes への一歩」',
+            '「残り日数は有限。1日も無駄にできない」',
+            '「トップセールスの秘訣は、地味な行動の継続」',
+            '「数字に責任を持つ。それがプロの姿勢」',
+            '「目標の130%を狙えば、100%は確実に達成できる」',
+            '「今日のアポが、来月の収入を決める」',
+            '「お客様の人生を変える提案をしよう」',
+            '「着金は信頼の証。価値を届けた結果だ」',
+            '「毎日の商談数を記録する習慣が、成果を変える」',
+            '「成約率を1%上げるだけで、必要商談数が劇的に減る」',
+            '「準備8割、本番2割。商談前の準備を怠るな」',
+            '「クロージングは始めから意識する。ゴールを見失うな」',
+            '「目標を口に出せ。言葉にすると行動が変わる」',
+            '「1日の終わりに振り返る。改善なき行動は成長しない」',
+            '「成功する人は、やるべきことを先にやる」',
+            '「あなたの商品で救える人が、今も困っている」',
+            '「今日も一人でも多くの人に価値を届けよう」',
+            '「着金目標は、あなたが届ける価値の総量だ」',
+            '「商談の数は、あなたの本気度を表す」',
+            '「迷ったら電話しろ。考えすぎは行動の敵」',
+            '「成約率は技術。技術は練習で磨ける」',
+            '「残り日数を見て焦るか、見て動くか。差はそこだ」',
+        ];
+
+        const motivationEl = document.getElementById('motivation-message');
+        motivationEl.textContent = salesMessages[Math.floor(Math.random() * salesMessages.length)];
+
+        setInterval(() => {
+            motivationEl.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                motivationEl.textContent = salesMessages[Math.floor(Math.random() * salesMessages.length)];
+                motivationEl.classList.remove('opacity-0', 'scale-95');
+            }, 500);
+        }, 15000);
+
+        // ==============================
+        // リセット
+        // ==============================
+        document.getElementById('reset-all-btn').addEventListener('click', function() {
+            if (confirm('全てのデータ（設定・着金記録）をリセットしますか？')) {
+                localStorage.removeItem('salesTimer_settings');
+                localStorage.removeItem('salesTimer_records');
+                applySettingsToForm();
+                renderRecords();
+                updateDashboard();
+                updateCalcPreview();
+            }
+        });
+
+        // ==============================
+        // 初期化
+        // ==============================
+        applySettingsToForm();
+        renderRecords();
+        updateDashboard();
+        updateCalcPreview();
+
+        // 1分ごとにダッシュボード更新（日付変更対応）
+        setInterval(updateDashboard, 60000);
+    });
+    </script>
+</body>
+</html>
